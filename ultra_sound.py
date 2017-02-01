@@ -2,8 +2,8 @@ import RPi.GPIO as GPIO
 import time
 GPIO.setmode(GPIO.BCM)
 
-TRIG = 23
-ECHO = 24
+TRIG = 22
+ECHO = 27
 
 print 'Distance Measurement In Progress'
 
@@ -18,13 +18,16 @@ GPIO.output(TRIG, True)
 time.sleep(0.00001)
 GPIO.output(TRIG, False)
 
+pulse_start = 0
+pulse_end = 0
+
 while GPIO.input(ECHO)==0:
-    print 'Hi'
     pulse_start = time.time()
 
 while GPIO.input(ECHO)==1:
     pulse_end = time.time()
 
+pulse_duration = pulse_end - pulse_start
 distance = pulse_duration * 17150
 
 distance = round(distance, 2)
