@@ -4,7 +4,6 @@ import socket
 import sys
 import pickle
 import os
-import pycurl, json
 
 from picamera.array import PiRGBArray
 from picamera import PiCamera
@@ -17,20 +16,6 @@ from time import sleep
 
 
 GPIO.setmode(GPIO.BCM)
-
-
-def postData(buffer1):
-    link = "http://129.21.65.108:81/fridge_app/addItem.php"
-    c = pycurl.Curl()
-    c.setopt(pycurl.URL, link)
-    c.setopt(pycurl.HTTPHEADER, [ 'Content-Type: application/json' , 'Accept: application/json'])
-    data = json.dumps(buffer1)
-    c.setopt(pycurl.POST, 1)
-    c.setopt(pycurl.POSTFIELDS, data)
-    c.setopt(pycurl.VERBOSE, 1)
-    c.perform()
-    #print curl_agent.getinfo(pycurl.RESPONSE_CODE)
-    c.close()
 
 def getDistance():
     TRIG = 23
@@ -79,38 +64,22 @@ rawCapture = PiRGBArray(camera, size=(224, 224))
 
 # allow the camera to warmup
 time.sleep(0.1)
-buffer = []
+
 print "Received"
-senseStarted = False
+
 for single in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
 
     frame = single.array
     data = pickle.dumps(frame) ### new code
     distance = getDistance()
-   # print distance
+    #print distance
     if (distance < 30):
-        senseStarted = True
         print "small"
         clientsocket.sendall(struct.pack("Q", len(data))+data) ### new code
         data = clientsocket.recv(4096)
-
-        if(len(buffer)<5):
-            buffer.append(data)
-        else:
-            buffer.pop(0)
+   # sleep(1)
         os.system('clear')
         print data
-
-
-
-    else:
-        if(senseStarted):
-            print "will send data"
-            print buffer[0]
-            d_json = json.loads(buffer[0]);
-            postData(d_json);
-
-        senseStarted = False
 
     print getDistance()
 #    dict = data.get('None')
