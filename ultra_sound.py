@@ -69,7 +69,7 @@ cap=cv2.VideoCapture(0)
 cap.set(3,224)
 cap.set(4,224)
 clientsocket=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-clientsocket.connect(('delta.student.rit.edu',8083))
+clientsocket.connect(('ai.student.rit.edu',8083))
 
 # initialize the camera and grab a reference to the raw camera capture
 camera = PiCamera()
