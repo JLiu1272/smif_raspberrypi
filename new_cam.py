@@ -15,6 +15,13 @@ from subprocess import call
 import pycurl
 import requests
 import struct ### new code
+
+#Imports for Computing Expiration Date 
+from datetime import timedelta
+import datetime
+import re
+
+
 cap=cv2.VideoCapture(0)
 cap.set(3,224)
 cap.set(4,224)
@@ -56,8 +63,47 @@ Type = Where is the food being placed
 1 - Refrigerator
 2 - Freezer at 0 F
 """
+def getRequest(url, food, type):
+    r = requests.get(url)
+    json = r.json()
+    lower_food = food.lower()
 
+    filtered = {}
+    if lower_food not in json.keys():
+        for key in json:
+            regex = r"" + re.escape(food)
+            need_match = re.search(regex, key)
+            if need_match is not None:
+                filtered[need_match.group(0)] = json[key]
+                return filtered[need_match.group(0)][type]
+    return json[lower_food][type]
 
+"""
+Compute Expiration Date
+"""
+def computeDateLeft(date, food, type):
+    today = datetime.datetime.now()
+    data = getRequest(url_exp, food, type)
+    dateleft = ""
+
+    if type == 2 and data == "" or data == "\u00a0":
+        return "Unable to get value"
+    elif data == "" or data == "\u00a0":
+        return computeDateLeft(today, food, type+1)
+    elif "month" in data or "months" in data:
+        week = int(data[0])*365/12
+        print("Month: " + str(week))
+        dateleft = date + timedelta(week)
+    elif "day" in data or "days" in data:
+        dateleft = date + timedelta(days=int(data[0]))
+    elif "year" in data or "years" in data:
+        year = int(data[0])*365
+        dateleft = date + timedelta(int(year))
+    elif "week" in data or "weeks" in data:
+        week = int(data[0])
+        dateleft = date + timedelta(week)
+
+    return dateleft
 
 sleep(0.1)
 for single in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
@@ -92,10 +138,9 @@ for single in camera.capture_continuous(rawCapture, format="bgr", use_video_port
     elif len(pointsBuffer) > 0 and (datetime.now() -last_time_of_interest).total_seconds()>2 :
         if (pointsBuffer[0] - pointsBuffer[len(pointsBuffer)-1] ) >0:
             print('moving right')
-            url = "http://107.23.213.161/expiration_database.json"
-            r = requests.get(url)
-            r.text
-            postData({"name":max_confidence_object,'date_in':'2017-03-03','date_left':r.text})
+            today = datetime.datetime.now()
+            date_left = computeDateLeft(today, max_confidence_object, 1)
+            postData({"name":max_confidence_object,'date_in':today,'date_left':date_left})
             print("DONE")
         else:
             print("moving left")
